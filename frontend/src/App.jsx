@@ -6,32 +6,25 @@ import ApiKeyPage from './components/ApiKeyPage'
 import { researchCompany } from './research'
 import './App.css'
 
-const getKeys = () => ({
-  gemini: localStorage.getItem('gemini_key') || '',
-  brightdata: localStorage.getItem('brightdata_key') || '',
-})
-
 function App() {
-  const keys = getKeys()
-  const [page, setPage] = useState(keys.gemini ? 'search' : 'apikey')
+  const [page, setPage] = useState(localStorage.getItem('bd_key') ? 'search' : 'apikey')
   const [report, setReport] = useState(null)
   const [error, setError] = useState(null)
   const [query, setQuery] = useState('')
 
-  const handleKeySet = ({ gemini, brightdata }) => {
-    localStorage.setItem('gemini_key', gemini)
-    if (brightdata) localStorage.setItem('brightdata_key', brightdata)
+  const handleKeySet = (key) => {
+    localStorage.setItem('bd_key', key)
     setPage('search')
   }
 
   const handleSearch = async (q) => {
-    const { gemini, brightdata } = getKeys()
-    if (!gemini) { setPage('apikey'); return }
+    const bdKey = localStorage.getItem('bd_key') || ''
+    if (!bdKey) { setPage('apikey'); return }
     setQuery(q)
     setError(null)
     setPage('loading')
     try {
-      const data = await researchCompany(q, gemini, brightdata || null)
+      const data = await researchCompany(q, bdKey)
       setReport(data)
       setPage('report')
     } catch (err) {
