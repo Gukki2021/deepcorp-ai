@@ -1,11 +1,13 @@
 import { useState } from 'react'
 
-export default function SearchPage({ onSearch }) {
+const EXAMPLES = ['Grab Holdings', 'Tesla', 'OpenAI', 'ByteDance', 'Stripe']
+
+export default function SearchPage({ onSearch, error }) {
   const [query, setQuery] = useState('')
 
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    if (query.trim()) onSearch(query.trim())
+  const submit = (q) => {
+    const v = (q || query).trim()
+    if (v) onSearch(v)
   }
 
   return (
@@ -13,31 +15,38 @@ export default function SearchPage({ onSearch }) {
       <div className="search-logo">🔍</div>
       <h1 className="search-title">DeepCorp AI</h1>
       <p className="search-subtitle">
-        AI-powered company intelligence. Enter any company name and our agents
-        will research, analyze, and generate a one-page investment report.
+        Enter any company name. Our AI agents search the web and generate a real-time investment intelligence report.
       </p>
 
-      <form className="search-box" onSubmit={handleSubmit}>
+      <div className="search-input-wrap">
         <input
           type="text"
-          placeholder="Enter company name (e.g. Grab, Tesla, Apple...)"
+          placeholder="Company name or URL — e.g. Tesla, Grab, OpenAI..."
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
           autoFocus
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && submit()}
         />
-        <button type="submit">Analyze</button>
-      </form>
-
-      <div className="search-hints">
-        <span className="hint-chip" onClick={() => { setQuery('Grab Holdings'); onSearch('Grab Holdings') }}>Grab Holdings</span>
-        <span className="hint-chip" onClick={() => { setQuery('Tesla'); onSearch('Tesla') }}>Tesla</span>
+        <button className="search-btn" onClick={() => submit()}>
+          Generate Intelligence Report →
+        </button>
+        {error && <div className="search-error">⚠ {error}</div>}
       </div>
 
-      <div className="search-badge">
-        <span>🌐 Bright Data Scraping</span>
-        <span>🤖 ActionBook Automation</span>
-        <span>🧠 Acontext Workflows</span>
-        <span>✨ Claude AI Analysis</span>
+      <div className="search-hints">
+        {EXAMPLES.map((ex) => (
+          <span key={ex} className="hint-chip" onClick={() => submit(ex)}>
+            {ex}
+          </span>
+        ))}
+      </div>
+
+      <div className="search-footer">
+        <span>Powered by Claude AI</span>
+        <span>·</span>
+        <span>Web Search</span>
+        <span>·</span>
+        <span>Real-time Data</span>
       </div>
     </div>
   )
