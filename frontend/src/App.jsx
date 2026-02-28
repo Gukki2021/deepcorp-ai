@@ -2,40 +2,55 @@ import { useState } from 'react'
 import SearchPage from './components/SearchPage'
 import ReportPage from './components/ReportPage'
 import LoadingPage from './components/LoadingPage'
+import ApiKeyPage from './components/ApiKeyPage'
+import { researchCompany } from './claude'
 import './App.css'
 
-const API_BASE = import.meta.env.VITE_API_BASE || ''
+function getKey() {
+  return localStorage.getItem('anthropic_key') || ''
+}
 
 function App() {
-  const [page, setPage] = useState('search')
+  const [page, setPage] = useState(getKey() ? 'search' : 'apikey')
   const [report, setReport] = useState(null)
   const [error, setError] = useState(null)
   const [query, setQuery] = useState('')
 
+  const handleKeySet = (key) => {
+    localStorage.setItem('anthropic_key', key)
+    setPage('search')
+  }
+
   const handleSearch = async (q) => {
+    const key = getKey()
+    if (!key) { setPage('apikey'); return }
     setQuery(q)
     setError(null)
     setPage('loading')
     try {
-      const res = await fetch(`${API_BASE}/api/research?company=${encodeURIComponent(q)}`)
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        throw new Error(err.error || `HTTP ${res.status}`)
-      }
-      const data = await res.json()
+      const data = await researchCompany(q, key)
       setReport(data)
       setPage('report')
     } catch (err) {
-      setError(err.message)
+      setError(err.message || 'Research failed')
       setPage('search')
     }
   }
 
   return (
     <div>
-      {page === 'search' && <SearchPage onSearch={handleSearch} error={error} />}
+      {page === 'apikey' && <ApiKeyPage onKeySet={handleKeySet} />}
+      {page === 'search' && (
+        <SearchPage
+          onSearch={handleSearch}
+          error={error}
+          onChangeKey={() => setPage('apikey')}
+        />
+      )}
       {page === 'loading' && <LoadingPage query={query} />}
-      {page === 'report' && <ReportPage data={report} onBack={() => setPage('search')} />}
+      {page === 'report' && (
+        <ReportPage data={report} onBack={() => setPage('search')} />
+      )}
     </div>
   )
 }

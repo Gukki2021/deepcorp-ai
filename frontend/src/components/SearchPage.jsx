@@ -1,8 +1,8 @@
 import { useState } from 'react'
 
-const EXAMPLES = ['Grab Holdings', 'Tesla', 'OpenAI', 'ByteDance', 'Stripe']
+const EXAMPLES = ['Grab Holdings', 'Tesla', 'OpenAI', 'ByteDance', 'Stripe', 'Palantir']
 
-export default function SearchPage({ onSearch, error }) {
+export default function SearchPage({ onSearch, error, onChangeKey }) {
   const [query, setQuery] = useState('')
 
   const submit = (q) => {
@@ -15,7 +15,7 @@ export default function SearchPage({ onSearch, error }) {
       <div className="search-logo">🔍</div>
       <h1 className="search-title">DeepCorp AI</h1>
       <p className="search-subtitle">
-        Enter any company name. Our AI agents search the web and generate a real-time investment intelligence report.
+        AI-powered company intelligence. Real-time research &amp; investment analysis on any company.
       </p>
 
       <div className="search-input-wrap">
@@ -46,7 +46,12 @@ export default function SearchPage({ onSearch, error }) {
         <span>·</span>
         <span>Web Search</span>
         <span>·</span>
-        <span>Real-time Data</span>
+        <button
+          onClick={onChangeKey}
+          style={{ background: 'none', border: 'none', color: 'var(--text-lighter)', fontSize: '0.75rem', cursor: 'pointer', padding: 0 }}
+        >
+          Change API Key
+        </button>
       </div>
     </div>
   )
