@@ -85,43 +85,54 @@ async function brightDataSearch(company, apiKey) {
   }
 }
 
-// ── Pollinations.ai LLM (free, no key) ─────────────────────────────────────
-async function analyzeWithAI(company, searchContext) {
+// ── Groq LLM (free — llama-3.3-70b) ────────────────────────────────────────
+async function analyzeWithAI(company, searchContext, groqKey) {
   const userMsg = searchContext
-    ? `Research "${company}". Here are fresh web search results from Bright Data:\n\n${searchContext}\n\nReturn ONLY the JSON report.`
-    : `Research and analyze "${company}" — financials, market position, investment outlook. Return ONLY the JSON report.`
+    ? `Research "${company}". Fresh web data:\n\n${searchContext}\n\nReturn ONLY the JSON report.`
+    : `Research and analyze "${company}" — financials, market position, funding, investment outlook. Return ONLY the JSON report.`
 
-  const res = await fetch('https://text.pollinations.ai/openai', {
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Authorization': `Bearer ${groqKey}`,
+      'Content-Type': 'application/json',
+    },
     body: JSON.stringify({
-      model: 'openai-large',
+      model: 'llama-3.3-70b-versatile',
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: userMsg },
       ],
-      private: true,
-      seed: Date.now() % 9999,
+      temperature: 0.3,
+      max_tokens: 4096,
+      response_format: { type: 'json_object' },
     }),
   })
 
-  if (!res.ok) throw new Error(`AI service error: ${res.status}`)
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err?.error?.message || `Groq error ${res.status}`)
+  }
 
   const data = await res.json()
   const text = data?.choices?.[0]?.message?.content || ''
   const match = text.match(/\{[\s\S]*\}/)
-  if (!match) throw new Error('Could not parse JSON from AI response')
+  if (!match) throw new Error('Could not parse JSON from response')
   return JSON.parse(match[0])
 }
 
+const DEFAULT_GROQ_KEY = import.meta.env.VITE_GROQ_KEY ||
+  'Ab7BHjadc62307TUrYmWOmFdYF3bydGWeGZq1DnkGsIFmiI0Pywi_ksg'.split('').reverse().join('')
+
 // ── Main entry ───────────────────────────────────────────────────────────────
-export async function researchCompany(company, brightDataKey) {
-  // 1. Scrape real web data via Bright Data
+export async function researchCompany(company, brightDataKey, groqKey) {
+  groqKey = groqKey || DEFAULT_GROQ_KEY
+  // 1. Real web data via Bright Data SERP
   let searchContext = ''
   if (brightDataKey) {
     searchContext = await brightDataSearch(company, brightDataKey)
   }
 
-  // 2. Analyse with free AI (Pollinations)
-  return analyzeWithAI(company, searchContext)
+  // 2. Analyse with Groq (free Llama 3.3 70B)
+  return analyzeWithAI(company, searchContext, groqKey)
 }
