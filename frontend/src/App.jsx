@@ -3,32 +3,35 @@ import SearchPage from './components/SearchPage'
 import ReportPage from './components/ReportPage'
 import LoadingPage from './components/LoadingPage'
 import ApiKeyPage from './components/ApiKeyPage'
-import { researchCompany } from './claude'
+import { researchCompany } from './research'
 import './App.css'
 
-function getKey() {
-  return localStorage.getItem('anthropic_key') || ''
-}
+const getKeys = () => ({
+  gemini: localStorage.getItem('gemini_key') || '',
+  brightdata: localStorage.getItem('brightdata_key') || '',
+})
 
 function App() {
-  const [page, setPage] = useState(getKey() ? 'search' : 'apikey')
+  const keys = getKeys()
+  const [page, setPage] = useState(keys.gemini ? 'search' : 'apikey')
   const [report, setReport] = useState(null)
   const [error, setError] = useState(null)
   const [query, setQuery] = useState('')
 
-  const handleKeySet = (key) => {
-    localStorage.setItem('anthropic_key', key)
+  const handleKeySet = ({ gemini, brightdata }) => {
+    localStorage.setItem('gemini_key', gemini)
+    if (brightdata) localStorage.setItem('brightdata_key', brightdata)
     setPage('search')
   }
 
   const handleSearch = async (q) => {
-    const key = getKey()
-    if (!key) { setPage('apikey'); return }
+    const { gemini, brightdata } = getKeys()
+    if (!gemini) { setPage('apikey'); return }
     setQuery(q)
     setError(null)
     setPage('loading')
     try {
-      const data = await researchCompany(q, key)
+      const data = await researchCompany(q, gemini, brightdata || null)
       setReport(data)
       setPage('report')
     } catch (err) {
@@ -41,16 +44,10 @@ function App() {
     <div>
       {page === 'apikey' && <ApiKeyPage onKeySet={handleKeySet} />}
       {page === 'search' && (
-        <SearchPage
-          onSearch={handleSearch}
-          error={error}
-          onChangeKey={() => setPage('apikey')}
-        />
+        <SearchPage onSearch={handleSearch} error={error} onChangeKey={() => setPage('apikey')} />
       )}
       {page === 'loading' && <LoadingPage query={query} />}
-      {page === 'report' && (
-        <ReportPage data={report} onBack={() => setPage('search')} />
-      )}
+      {page === 'report' && <ReportPage data={report} onBack={() => setPage('search')} />}
     </div>
   )
 }
